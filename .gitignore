@@ -131,3 +131,9 @@ dmypy.json
 # macOS
 **/.DS_Store
 
+# ML models
+*.onnx
+*.tflite
+*.ort
+*.pth
+*.pt
