@@ -72,7 +72,7 @@ class LayerNormChannel(nn.Module):
     LayerNorm for Channel-first format 4D Tensor.
     Input: tensor in shape [B, C, H, W]
     """
-    def __init__(self, num_features, eps=1e-05) -> None:
+    def __init__(self, num_features, eps=1e-05, **kwargs) -> None:
         super().__init__()
         self.weight = nn.Parameter(torch.ones(num_features))
         self.bias = nn.Parameter(torch.zeros(num_features))
