@@ -29,7 +29,7 @@ model = reparameterize_model(model)
 image = preprocess(
     Image.open("docs/fig_accuracy_latency.png").convert("RGB")
 ).unsqueeze(0)
-text = tokenizer(["a diagram", "a dog", "a cat"])
+text = tokenizer("a diagram")
 
 # 分离 text 和 visual
 visual_model = model.visual
@@ -41,7 +41,6 @@ torch.onnx.export(
     (image,),
     f=f"./{model_file}_visual.onnx",
     external_data=False,
-    **model_kwargs
 )
 
 # 导出 text 模型
@@ -50,7 +49,6 @@ torch.onnx.export(
     (text,),
     f=f"./{model_file}_text.onnx",
     external_data=False,
-    **model_kwargs
 )
 
 # 量化为 int8
@@ -58,22 +56,22 @@ torch.onnx.export(
 # 预处理
 quantization.quant_pre_process(
     f"./{model_file}_visual.onnx",
-    f"./{model_file}_visual.onnx",
+    f"./{model_file}_visual_int8.onnx",
 )
 
 quantization.quant_pre_process(
     f"./{model_file}_text.onnx",
-    f"./{model_file}_text.onnx",
+    f"./{model_file}_text_int8.onnx",
 )
 
 
 quantization.quantize_dynamic(
-    f"./{model_file}_visual.onnx",
+    f"./{model_file}_visual_int8.onnx",
     f"./{model_file}_visual_int8.onnx",
 )
 
 quantization.quantize_dynamic(
-    f"./{model_file}_text.onnx",
+    f"./{model_file}_text_int8.onnx",
     f"./{model_file}_text_int8.onnx",
 )
 
