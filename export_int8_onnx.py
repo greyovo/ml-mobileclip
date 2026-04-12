@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import open_clip
 from PIL import Image
 from mobileclip.modules.common.mobileone import reparameterize_model
@@ -33,7 +34,11 @@ text = tokenizer("a diagram")
 
 # 分离 text 和 visual
 visual_model = model.visual
-text_model = model.text
+text_model: nn.Module = model.text
+
+# 打印模型输入维度
+print("Input dim of visual model", image.shape)
+print("Input dim of text model", text.shape)
 
 # 导出 visual 模型
 torch.onnx.export(
@@ -41,6 +46,7 @@ torch.onnx.export(
     (image,),
     f=f"./{model_file}_visual.onnx",
     external_data=False,
+    verify=True,
 )
 
 # 导出 text 模型
@@ -49,7 +55,11 @@ torch.onnx.export(
     (text,),
     f=f"./{model_file}_text.onnx",
     external_data=False,
+    verify=True,
 )
+
+print("Export ONNX done")
+
 
 # 量化为 int8
 
@@ -75,6 +85,7 @@ quantization.quantize_dynamic(
     f"./{model_file}_text_int8.onnx",
 )
 
+print("Quantization done")
 
 ## with torch.no_grad(), torch.cuda.amp.autocast():
 #     image_features = model.encode_image(image)
