@@ -4,7 +4,7 @@ from PIL import Image
 from mobileclip.modules.common.mobileone import reparameterize_model
 from onnxruntime import quantization
 
-model_name = "MobileCLIP2-S3"
+model_name = "MobileCLIP2-S2"
 model_file = model_name.lower().replace("-", "_")
 
 model_kwargs = {}
