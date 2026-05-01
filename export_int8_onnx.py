@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, "open_clip/src")
+
 import torch
 import torch.nn as nn
 import open_clip
@@ -78,11 +81,13 @@ quantization.quant_pre_process(
 quantization.quantize_dynamic(
     f"./{model_file}_visual_int8.onnx",
     f"./{model_file}_visual_int8.onnx",
+    weight_type=quantization.QuantType.QInt8,
 )
 
 quantization.quantize_dynamic(
     f"./{model_file}_text_int8.onnx",
     f"./{model_file}_text_int8.onnx",
+    weight_type=quantization.QuantType.QInt8,
 )
 
 print("Quantization done")
