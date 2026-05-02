@@ -1,10 +1,11 @@
 import torch
+import torch.nn as nn
 import open_clip
 from PIL import Image
 from mobileclip.modules.common.mobileone import reparameterize_model
 from onnxruntime import quantization
 
-model_name = "MobileCLIP2-S3"
+model_name = "MobileCLIP2-S2"
 model_file = model_name.lower().replace("-", "_")
 
 model_kwargs = {}
@@ -29,11 +30,15 @@ model = reparameterize_model(model)
 image = preprocess(
     Image.open("docs/fig_accuracy_latency.png").convert("RGB")
 ).unsqueeze(0)
-text = tokenizer(["a diagram", "a dog", "a cat"])
+text = tokenizer("a diagram")
 
 # 分离 text 和 visual
 visual_model = model.visual
-text_model = model.text
+text_model: nn.Module = model.text
+
+# 打印模型输入维度
+print("Input dim of visual model", image.shape)
+print("Input dim of text model", text.shape)
 
 # 导出 visual 模型
 torch.onnx.export(
@@ -41,7 +46,7 @@ torch.onnx.export(
     (image,),
     f=f"./{model_file}_visual.onnx",
     external_data=False,
-    **model_kwargs
+    verify=True,
 )
 
 # 导出 text 模型
@@ -50,33 +55,37 @@ torch.onnx.export(
     (text,),
     f=f"./{model_file}_text.onnx",
     external_data=False,
-    **model_kwargs
+    verify=True,
 )
+
+print("Export ONNX done")
+
 
 # 量化为 int8
 
 # 预处理
 quantization.quant_pre_process(
     f"./{model_file}_visual.onnx",
-    f"./{model_file}_visual.onnx",
+    f"./{model_file}_visual_int8.onnx",
 )
 
 quantization.quant_pre_process(
     f"./{model_file}_text.onnx",
-    f"./{model_file}_text.onnx",
+    f"./{model_file}_text_int8.onnx",
 )
 
 
 quantization.quantize_dynamic(
-    f"./{model_file}_visual.onnx",
+    f"./{model_file}_visual_int8.onnx",
     f"./{model_file}_visual_int8.onnx",
 )
 
 quantization.quantize_dynamic(
-    f"./{model_file}_text.onnx",
+    f"./{model_file}_text_int8.onnx",
     f"./{model_file}_text_int8.onnx",
 )
 
+print("Quantization done")
 
 ## with torch.no_grad(), torch.cuda.amp.autocast():
 #     image_features = model.encode_image(image)
