@@ -12,6 +12,7 @@ import os
 # 对比推理精度
 import onnxruntime as ort
 
+# https://huggingface.co/apple/MobileCLIP2-S2/tree/main
 model_name = "MobileCLIP2-S2"
 model_file = model_name.lower().replace("-", "_")
 
