@@ -1,11 +1,16 @@
+from pathlib import Path
 import torch
 import torch.nn as nn
 import open_clip
 import numpy as np
 from mobileclip.modules.common.mobileone import reparameterize_model
-from onnxruntime.quantization import quantize_dynamic, QuantType
+from onnxruntime.quantization import quantize_dynamic, QuantType, quant_pre_process
 from onnxruntime.quantization.registry import IntegerOpsRegistry
 import onnx
+from onnxruntime.tools.optimize_onnx_model import optimize_model
+import os
+# 对比推理精度
+import onnxruntime as ort
 
 model_name = "MobileCLIP2-S2"
 model_file = model_name.lower().replace("-", "_")
@@ -85,11 +90,30 @@ export_model_to_onnx(
     dynamic_axes={"text": {0: "batch_size"}, "text_features": {0: "batch_size"}},
 )
 
-# 第二步：使用 ONNX Runtime 进行动态量化，生成真正的 INT8 模型
+# 第二步：Pre-process FP32 ONNX (shape inference + optimization)
+
+# visual_fp32_optimized_path = f"./{model_file}_visual_fp32_optimized.onnx"
+# text_fp32_optimized_path = f"./{model_file}_text_fp32_optimized.onnx"
+
+# Optimization
+optimize_model(Path(visual_fp32_path), Path(visual_fp32_path))
+optimize_model(Path(text_fp32_path), Path(text_fp32_path))
+
+# Shape inference
+onnx.shape_inference.infer_shapes_path(visual_fp32_path, visual_fp32_path)
+onnx.shape_inference.infer_shapes_path(text_fp32_path, text_fp32_path)
+
+print(f"Pre-processed FP32 ONNX (shape inference + optimization) saved to {visual_fp32_path} and {text_fp32_path}")
+
+# 第三步：使用 ONNX Runtime 进行动态量化，生成真正的 INT8 模型
+
+# 预处理
+quant_pre_process(visual_fp32_path, visual_fp32_path)
+quant_pre_process(text_fp32_path, text_fp32_path)
+
 visual_int8_path = f"./int8_results/{model_file}_visual.onnx"
 text_int8_path = f"./int8_results/{model_file}_text.onnx"
 
-import os
 if not os.path.exists("int8_results"):
     os.makedirs("int8_results")
 
@@ -106,15 +130,13 @@ quantize_dynamic(
 print(f"Exported true INT8 ONNX to {visual_int8_path}")
 
 quantize_dynamic(
-    model_input=text_fp32_path,
+    model_input=text_fp32_path, 
     model_output=text_int8_path,
     weight_type=QuantType.QInt8,
     op_types_to_quantize=op_types_to_quantize.keys(),
 )
-print(f"Exported true INT8 ONNX to {text_int8_path}")
 
-# 对比文件大小
-import os
+print(f"Exported true INT8 ONNX to {text_int8_path}")
 
 print("\n" + "="*60)
 print("模型体积对比:")
@@ -125,8 +147,6 @@ for path in [visual_fp32_path, visual_int8_path, text_fp32_path, text_int8_path]
         size_mb = os.path.getsize(path) / (1024 * 1024)
         print(f"{path}: {size_mb:.2f} MB")
 
-# 对比推理精度
-import onnxruntime as ort
 
 print("\n" + "="*60)
 print("推理精度对比:")
