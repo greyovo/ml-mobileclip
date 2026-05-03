@@ -4,6 +4,7 @@ import open_clip
 import numpy as np
 from mobileclip.modules.common.mobileone import reparameterize_model
 from onnxruntime.quantization import quantize_dynamic, QuantType
+from onnxruntime.quantization.registry import IntegerOpsRegistry
 import onnx
 
 model_name = "MobileCLIP2-S2"
@@ -56,7 +57,7 @@ def export_model_to_onnx(export_model, dummy_input, onnx_path, input_names, outp
         input_names=input_names,
         output_names=output_names,
         dynamic_axes=dynamic_axes,
-        opset_version=14,
+        opset_version=18,
         dynamo=False,
     )
     print(f"Exported FP32 ONNX to {onnx_path}")
@@ -85,20 +86,30 @@ export_model_to_onnx(
 )
 
 # 第二步：使用 ONNX Runtime 进行动态量化，生成真正的 INT8 模型
-visual_int8_path = f"./{model_file}_visual_true_int8.onnx"
-text_int8_path = f"./{model_file}_text_true_int8.onnx"
+visual_int8_path = f"./int8_results/{model_file}_visual.onnx"
+text_int8_path = f"./int8_results/{model_file}_text.onnx"
+
+import os
+if not os.path.exists("int8_results"):
+    os.makedirs("int8_results")
+
+op_types_to_quantize = IntegerOpsRegistry.copy()
+op_types_to_quantize.pop("Conv")
 
 quantize_dynamic(
     model_input=visual_fp32_path,
     model_output=visual_int8_path,
     weight_type=QuantType.QInt8,
+    op_types_to_quantize=op_types_to_quantize.keys(),
 )
+
 print(f"Exported true INT8 ONNX to {visual_int8_path}")
 
 quantize_dynamic(
     model_input=text_fp32_path,
     model_output=text_int8_path,
     weight_type=QuantType.QInt8,
+    op_types_to_quantize=op_types_to_quantize.keys(),
 )
 print(f"Exported true INT8 ONNX to {text_int8_path}")
 
