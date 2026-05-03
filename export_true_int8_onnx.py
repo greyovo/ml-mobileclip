@@ -62,7 +62,7 @@ def export_model_to_onnx(export_model, dummy_input, onnx_path, input_names, outp
         input_names=input_names,
         output_names=output_names,
         dynamic_axes=dynamic_axes,
-        opset_version=18,
+        opset_version=20,
         dynamo=False,
     )
     print(f"Exported FP32 ONNX to {onnx_path}")
