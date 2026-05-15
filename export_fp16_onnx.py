@@ -90,19 +90,19 @@ export_model_to_onnx(
     dynamic_axes={"text": {0: "batch_size"}, "text_features": {0: "batch_size"}},
 )
 
-# 第二步：导出 Visual FP16 ONNX
-model_half = model.half()
+# 第二步：导出 Visual FP16 ONNX（使用 autocast，输入/输出保持 FP32，内部 FP16 计算）
 
 visual_fp16_path = f"./fp16_results/{model_file}_visual.onnx"
 
-export_model_to_onnx(
-    model_half.visual,
-    (image.half(),),
-    visual_fp16_path,
-    input_names=["image"],
-    output_names=["image_features"],
-    dynamic_axes={"image": {0: "batch_size"}, "image_features": {0: "batch_size"}},
-)
+with torch.autocast(device_type="cpu", dtype=torch.float16):
+    export_model_to_onnx(
+        model.visual,
+        (image,),
+        visual_fp16_path,
+        input_names=["image"],
+        output_names=["image_features"],
+        dynamic_axes={"image": {0: "batch_size"}, "image_features": {0: "batch_size"}},
+    )
 
 # 优化 Visual FP16 模型
 optimize_model(Path(visual_fp16_path), Path(visual_fp16_path))
@@ -161,7 +161,7 @@ text_probs_fp32_onnx = (100.0 * image_features_fp32_onnx @ text_features_fp32_on
 sess_visual_fp16 = ort.InferenceSession(visual_fp16_path)
 sess_text_int8 = ort.InferenceSession(text_int8_path)
 
-image_features_mixed_onnx = sess_visual_fp16.run(None, {"image": image_np.astype(np.float16)})[0]
+image_features_mixed_onnx = sess_visual_fp16.run(None, {"image": image_np})[0]
 text_features_int8_onnx = sess_text_int8.run(None, {"text": text_np})[0]
 
 image_features_mixed_onnx = torch.from_numpy(image_features_mixed_onnx).float()
