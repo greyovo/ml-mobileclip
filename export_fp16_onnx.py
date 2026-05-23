@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 import torch
 import torch.nn as nn
 import open_clip
@@ -90,27 +91,51 @@ export_model_to_onnx(
     dynamic_axes={"text": {0: "batch_size"}, "text_features": {0: "batch_size"}},
 )
 
-# 第二步：导出 Visual FP16 ONNX（使用 autocast，输入/输出保持 FP32，内部 FP16 计算）
+# 第二步：导出 Visual FP16 ONNX（输入/输出保持 FP32，内部 FP16 计算）
 
 visual_fp16_path = f"./fp16_results/{model_file}_visual.onnx"
 
-with torch.autocast(device_type="cpu", dtype=torch.float16):
-    export_model_to_onnx(
-        model.visual,
-        (image,),
-        visual_fp16_path,
-        input_names=["image"],
-        output_names=["image_features"],
-        dynamic_axes={"image": {0: "batch_size"}, "image_features": {0: "batch_size"}},
-    )
+import onnx
+from onnxconverter_common import float16
+
+# print("convert_float_to_float16...")
+# onnx_fp32_visual = onnx.load(visual_fp32_path)
+# onnx_fp16_visual = float16.convert_float_to_float16(onnx_fp32_visual, keep_io_types=True)
+
+# onnx.save(onnx_fp16_visual, visual_fp16_path)
+# onnx.save(onnx_fp16_text, text_fp16_path)
+# export_model_to_onnx(
+#     model.visual,
+#     (image,),
+#     visual_fp16_path,
+#     input_names=["image"],
+#     output_names=["image_features"],
+#     dynamic_axes={"image": {0: "batch_size"}, "image_features": {0: "batch_size"}},
+# )
 
 # 优化 Visual FP16 模型
-optimize_model(Path(visual_fp16_path), Path(visual_fp16_path))
-onnx.shape_inference.infer_shapes_path(visual_fp16_path, visual_fp16_path)
+# optimize_model(Path(visual_fp32_path), Path(visual_fp32_path))
+# onnx.shape_inference.infer_shapes_path(visual_fp32_path, visual_fp32_path)
+
+from onnxruntime.tools.convert_onnx_models_to_ort import convert_onnx_models_to_ort
+
+# shutil.copy(visual_fp32_path, visual_fp16_path)
+
+onnx_fp16_visual = float16.convert_float_to_float16(
+    onnx.load(visual_fp32_path),
+    min_positive_val=0.0,   # 接近实际最小值
+    max_finite_val=65500,    # 接近实际最大值，留一点余量
+    keep_io_types=True
+)
+onnx.save(onnx_fp16_visual, visual_fp16_path)
+convert_onnx_models_to_ort(Path(visual_fp16_path), Path(visual_fp16_path).parent)
+
+# visual_fp16_path = visual_fp16_path.replace(".onnx", ".ort")
+# print("visual_fp16_path:", visual_fp16_path)
 
 # 第三步：Text FP32 ONNX 预处理 + INT8 动态量化
-optimize_model(Path(text_fp32_path), Path(text_fp32_path))
-onnx.shape_inference.infer_shapes_path(text_fp32_path, text_fp32_path)
+# optimize_model(Path(text_fp32_path), Path(text_fp32_path))
+# onnx.shape_inference.infer_shapes_path(text_fp32_path, text_fp32_path)
 quant_pre_process(text_fp32_path, text_fp32_path)
 
 text_int8_path = f"./fp16_results/{model_file}_text.onnx"
@@ -165,7 +190,7 @@ image_features_mixed_onnx = sess_visual_fp16.run(None, {"image": image_np})[0]
 text_features_int8_onnx = sess_text_int8.run(None, {"text": text_np})[0]
 
 image_features_mixed_onnx = torch.from_numpy(image_features_mixed_onnx).float()
-text_features_int8_onnx = torch.from_numpy(text_features_int8_onnx).float()
+text_features_int8_onnx = torch.from_numpy(text_features_int8_onnx)
 
 image_features_mixed_onnx /= image_features_mixed_onnx.norm(dim=-1, keepdim=True)
 text_features_int8_onnx /= text_features_int8_onnx.norm(dim=-1, keepdim=True)
