@@ -139,3 +139,6 @@ dmypy.json
 *.pt
 
 dataset/
+calibration_data/
+*.required_operators.config
+*.required_operators.with_runtime_opt.config
