@@ -13,8 +13,13 @@ import os
 import onnxruntime as ort
 
 # https://huggingface.co/apple/MobileCLIP2-S2/tree/main
-model_name = "MobileCLIP2-S2"
-model_file = model_name.lower().replace("-", "_")
+# model_name = "MobileCLIP2-S2"
+# python -m onnxruntime.tools.convert_onnx_models_to_ort
+model_name = "MobileCLIP2-S0"
+model_file = f"./{model_name.lower().replace("-", "_")}.pt"
+if not os.path.exists(model_file):
+    print(f"ERROR: ---> model_file {model_file} not exists!")
+    exit(-1)
 
 model_kwargs = {}
 if not (
@@ -25,7 +30,7 @@ if not (
     model_kwargs = {"image_mean": (0, 0, 0), "image_std": (1, 1, 1)}
 
 model, _, preprocess = open_clip.create_model_and_transforms(
-    model_name, pretrained=f"./{model_file}.pt", **model_kwargs
+    model_name, pretrained=model_file, **model_kwargs
 )
 tokenizer = open_clip.get_tokenizer(model_name)
 

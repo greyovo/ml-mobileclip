@@ -139,4 +139,3 @@ dmypy.json
 *.pt
 
 dataset/
-*_results/
