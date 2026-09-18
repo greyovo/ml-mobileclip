@@ -23,7 +23,7 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_MODEL = ROOT / "assets/models/mobileclip2_s2_visual.onnx"
+DEFAULT_MODEL = ROOT / "assets/models/mobileclip2_s0_visual.onnx"
 DEFAULT_IMAGE = ROOT / "ml-mobileclip/docs/example.png"
 
 
