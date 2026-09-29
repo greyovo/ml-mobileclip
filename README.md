@@ -43,21 +43,17 @@ conda activate clipenv
 pip install -e .
 ```
 
+The repository includes the patched OpenCLIP source under `open_clip/`.
+Installing MobileCLIP also installs the bundled `open_clip` and
+`open_clip_train` packages; no additional repository clone is required.
+
 ### OpenCLIP Support
-Our models are now natively supported in OpenCLIP. To use MobileCLIP models in OpenCLIP, setup your environment as shown below,
+Our models are supported by the bundled OpenCLIP source. To use MobileCLIP
+models in OpenCLIP, set up your environment as shown below:
 ```bash
 conda create -n clipenv python=3.10
 conda activate clipenv
-
-# Clone OpenCLIP repository, add MobileCLIP2 models, and install
-git clone https://github.com/mlfoundations/open_clip.git
-pushd open_clip
-git apply ../mobileclip2/open_clip_inference_only.patch
-cp -r ../mobileclip2/* ./src/open_clip/
 pip install -e .
-popd
-
-pip install git+https://github.com/huggingface/pytorch-image-models
 ```
 
 To download pretrained checkpoints follow the code snippet below

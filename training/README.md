@@ -45,27 +45,18 @@ a single image.
 
 ## Installing dependencies
 
-We use OpenCLIP for training. We have made minor modifications to OpenCLIP for 
-support of loading reinforcements and the training loss. To checkout the 
-specific version of each library and apply our corresponding patch run the 
-following commands in order:
+The OpenCLIP source used by this project is bundled under `open_clip/`, so a
+second repository clone is not needed. Install the repository directly:
 ```bash
 # Clone MobileCLIP repository
 git clone git@github.com:apple/ml-mobileclip.git
 cd ml-mobileclip/
-
-# Clone OpenCLIP repository, apply patch, and install
-git clone https://github.com/mlfoundations/open_clip.git
-cd open_clip
-git checkout 7260a46e7b4bcf518f5200fea06da5bc85aae025  # Mon Mar 17 18:18:30 2025 -0400
-git apply ../open_clip_v2.patch
-cp ../configs/ ./ -r
-cp ../dr/ ./src/open_clip_train/ -r
-cp ../../mobileclip2/* ./src/open_clip/ -r
+pip install -e .
 ```
 
-We retain the v1 patch for reproducibility. One can reproduce v1 OpenCLIP code 
-by following these steps:
+We retain the v1 patch for reproducibility. The following legacy instructions
+intentionally use a separate OpenCLIP checkout and are only needed to reproduce
+the v1 implementation:
 ```
 # Revert changes for compatibility with older OpenCLIP commit
 sed -i 's/open_clip_train/training/g' ../dr/transforms.py
@@ -86,9 +77,8 @@ cp ../dr/ ./src/training/ -r
 We provide scripts for training on DFNDR-2B12M and DFNDR-2B.
 
 ```bash
-cd open_clip/
-bash configs/run_dfndr12m.sh  # Train a MobileCILP-B on DFN-2B12M with DR
-bash configs/run_dfndr1B.sh  # Train a MobileCLIP-B on DFN-2B with DR
+bash training/configs/run_dfndr12m.sh  # Train a MobileCILP-B on DFN-2B12M with DR
+bash training/configs/run_dfndr2b.sh  # Train a MobileCLIP-B on DFN-2B with DR
 ```
 
 ### DataCompDR
@@ -96,8 +86,7 @@ bash configs/run_dfndr1B.sh  # Train a MobileCLIP-B on DFN-2B with DR
 We provide scripts for training on DataCompDR-12M and DataCompDR-1B.
 
 ```bash
-cd open_clip/
-bash configs/run_datacomp12m.sh  # Train a ViT-B/16 on DataComp-12M without DR
-bash configs/run_datacompdr12m.sh  # Train a ViT-B/16 on DataComp-12M with DR
-bash configs/run_datacompdr1B.sh  # Train a ViT-B/16 on DataComp-1B with DR
+bash training/configs/run_datacomp12m.sh  # Train a ViT-B/16 on DataComp-12M without DR
+bash training/configs/run_datacompdr12m.sh  # Train a ViT-B/16 on DataComp-12M with DR
+bash training/configs/run_datacompdr1b.sh  # Train a ViT-B/16 on DataComp-1B with DR
 ```
