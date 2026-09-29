@@ -1,9 +1,13 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ml-mobileclip"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "ftfy>=6.3.1",
     "huggingface-hub>=0.24.0",
@@ -21,8 +25,9 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-where = [".", "open_clip/src"]
+where = [".", "third_party/open_clip/src"]
 include = ["mobileclip*", "open_clip*", "open_clip_train*"]
+namespaces = false
 
 [tool.setuptools.package-data]
 open_clip = ["bpe_simple_vocab_16e6.txt.gz", "model_configs/*.json"]

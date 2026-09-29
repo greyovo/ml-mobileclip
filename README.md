@@ -37,23 +37,25 @@ The repository contains code for inference, training, and evaluation of MobileCL
 ## Getting Started
 
 ### Setup
+
+Python 3.11 or newer and [uv](https://docs.astral.sh/uv/) are required.
+
 ```bash
-conda create -n clipenv python=3.10
-conda activate clipenv
-pip install -e .
+uv sync
 ```
 
-The repository includes the patched OpenCLIP source under `open_clip/`.
-Installing MobileCLIP also installs the bundled `open_clip` and
-`open_clip_train` packages; no additional repository clone is required.
+The repository includes the patched OpenCLIP source under `third_party/open_clip/`.
+`uv sync` creates `.venv`, installs the locked dependencies, and installs this
+project in editable mode, including the bundled `open_clip` and
+`open_clip_train` packages. No additional repository clone or `pip install` is
+required. Run commands with `uv run`, or activate the environment with
+`source .venv/bin/activate`.
 
 ### OpenCLIP Support
 Our models are supported by the bundled OpenCLIP source. To use MobileCLIP
 models in OpenCLIP, set up your environment as shown below:
 ```bash
-conda create -n clipenv python=3.10
-conda activate clipenv
-pip install -e .
+uv sync
 ```
 
 To download pretrained checkpoints follow the code snippet below

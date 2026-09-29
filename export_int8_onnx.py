@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, "open_clip/src")
+sys.path.insert(0, "third_party/open_clip/src")
 
 import torch
 import torch.nn as nn

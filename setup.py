@@ -34,12 +34,12 @@ def get_files(path, relative_to="."):
 
 REQUIREMENTS = _read_reqs("requirements.txt")
 
-# OpenCLIP is vendored under open_clip/ so a checkout of this repository is
+# OpenCLIP is vendored under third_party/open_clip/ so a checkout is
 # self-contained. Keep its packages in the MobileCLIP distribution instead of
 # requiring users to clone and install a second repository.
 PACKAGES = find_packages(include=["mobileclip*"])
 PACKAGES += find_packages(
-    where="open_clip/src", include=["open_clip*", "open_clip_train*"]
+    where="third_party/open_clip/src", include=["open_clip*", "open_clip_train*"]
 )
 
 setup(
@@ -70,8 +70,8 @@ setup(
     ],
     packages=PACKAGES,
     package_dir={
-        "open_clip": "open_clip/src/open_clip",
-        "open_clip_train": "open_clip/src/open_clip_train",
+        "open_clip": "third_party/open_clip/src/open_clip",
+        "open_clip_train": "third_party/open_clip/src/open_clip_train",
     },
     package_data={
         "open_clip": ["bpe_simple_vocab_16e6.txt.gz", "model_configs/*.json"],

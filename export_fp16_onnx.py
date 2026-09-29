@@ -25,7 +25,7 @@ from onnxruntime.transformers.float16 import convert_float_to_float16
 
 
 REPO_ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(REPO_ROOT / "open_clip" / "src"))
+sys.path.insert(0, str(REPO_ROOT / "third_party" / "open_clip" / "src"))
 
 import open_clip  # noqa: E402
 from mobileclip.modules.common.mobileone import reparameterize_model  # noqa: E402

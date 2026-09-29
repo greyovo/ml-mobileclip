@@ -45,13 +45,14 @@ a single image.
 
 ## Installing dependencies
 
-The OpenCLIP source used by this project is bundled under `open_clip/`, so a
+The OpenCLIP source used by this project is bundled under
+`third_party/open_clip/`, so a
 second repository clone is not needed. Install the repository directly:
 ```bash
 # Clone MobileCLIP repository
 git clone git@github.com:apple/ml-mobileclip.git
 cd ml-mobileclip/
-pip install -e .
+uv sync
 ```
 
 We retain the v1 patch for reproducibility. The following legacy instructions
