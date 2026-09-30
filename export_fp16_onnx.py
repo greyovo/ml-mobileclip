@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Export an official MobileCLIP S-series model to FP16 ONNX.
+"""Export an official MobileCLIP S-series model to compact ONNX.
+
+The visual encoder uses FP16.  The text encoder uses per-channel dynamic INT8
+weight quantization: token IDs stay INT64 and activations/output stay FP32, so
+callers do not need quantization parameters in their inputs.
 
 Usage:
     python export_fp16_onnx.py s0
@@ -21,6 +25,7 @@ from pathlib import Path
 
 import onnx
 import torch
+from onnxruntime import quantization
 from onnxruntime.transformers.float16 import convert_float_to_float16
 
 
@@ -42,7 +47,10 @@ MODELS = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Download and export MobileCLIP image/text encoders as FP16 ONNX."
+        description=(
+            "Download and export a MobileCLIP FP16 image encoder and a compact "
+            "dynamic-INT8 text encoder."
+        )
     )
     parser.add_argument("model", choices=MODELS, help="model size: s0, s1, or s2")
     return parser.parse_args()
@@ -77,6 +85,55 @@ def export_fp16(
         fp16_model = convert_float_to_float16(fp32_model, keep_io_types=False)
         onnx.checker.check_model(fp16_model)
         onnx.save_model(fp16_model, output_path, save_as_external_data=False)
+
+
+def export_int8_text(
+    module: torch.nn.Module,
+    sample_input: torch.Tensor,
+    output_path: Path,
+) -> None:
+    """Export a text encoder with INT8 weights and FP32 activations/output.
+
+    Per-channel quantization is slightly larger than per-tensor quantization,
+    but noticeably reduces the text-feature error while remaining about half
+    the size of the FP16 model.
+    """
+    with tempfile.TemporaryDirectory(
+        prefix=f".{output_path.stem}_", dir=output_path.parent
+    ) as temporary_dir:
+        fp32_path = Path(temporary_dir) / "text_fp32.onnx"
+        preprocessed_path = Path(temporary_dir) / "text_preprocessed.onnx"
+
+        with torch.inference_mode():
+            torch.onnx.export(
+                module,
+                sample_input,
+                fp32_path,
+                export_params=True,
+                external_data=False,
+                opset_version=18,
+                do_constant_folding=True,
+                input_names=["text"],
+                output_names=["text_features"],
+            )
+
+        # Shape inference before quantization gives ORT enough type information
+        # to select only safe weight-bearing operators.
+        # The dynamo exporter already writes inferred value information. ORT's
+        # symbolic inference cannot currently complete on its ScatterND-based
+        # causal mask, so retain ONNX shape inference and skip only that pass.
+        quantization.quant_pre_process(
+            fp32_path,
+            preprocessed_path,
+            skip_symbolic_shape=True,
+        )
+        quantization.quantize_dynamic(
+            preprocessed_path,
+            output_path,
+            per_channel=True,
+            weight_type=quantization.QuantType.QInt8,
+        )
+        onnx.checker.check_model(onnx.load(output_path))
 
 
 def main() -> None:
@@ -115,8 +172,8 @@ def main() -> None:
 
     print(f"Exporting visual encoder to {visual_output.name}...")
     export_fp16(model.visual, image, visual_output, "image")
-    print(f"Exporting text encoder to {text_output.name}...")
-    export_fp16(model.text, text, text_output, "text")
+    print(f"Exporting dynamic-INT8 text encoder to {text_output.name}...")
+    export_int8_text(model.text, text, text_output)
 
     print("Export complete:")
     print(f"  {visual_output}")
