@@ -82,7 +82,7 @@ def export_fp16(
             )
 
         fp32_model = onnx.load(temporary_file.name)
-        fp16_model = convert_float_to_float16(fp32_model, keep_io_types=False)
+        fp16_model = convert_float_to_float16(fp32_model, keep_io_types=True)
         onnx.checker.check_model(fp16_model)
         onnx.save_model(fp16_model, output_path, save_as_external_data=False)
 
